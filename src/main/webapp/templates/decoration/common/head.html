@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Working Title</title>
+
+        {{#__js-bootup-module__}}
+            <!-- Load require-js -->
+            <script src="/js/vendor/require/require-jquery.js"></script>
+
+            <!-- Load common-config. On completion load given bootup module -->
+            <script>
+                require(['/js/util/commonConfig.js'], function() {
+                    require([ '{{__js-bootup-module__}}' ]);
+                });
+            </script>
+        {{/__js-bootup-module__}}
+    </head>
+
+    <body>
+        <div id="errors">
+            <ul>
+                {{#__errors__}}
+                    <li>{{.}}</li>
+                {{/__errors__}}
+            </ul>
+        </div>
+

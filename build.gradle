@@ -1,0 +1,82 @@
+apply plugin: 'war'
+apply plugin: 'cargo'
+
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenRepo(name: 'zt-public-snapshots', url: 'http://repos.zeroturnaround.com/nexus/content/groups/zt-public/')
+    }
+    dependencies {
+        classpath files("$projectDir/vendor/gradle-cargo-plugin-0.5.6.patched.jar") // temporary: see ./vendor/README
+        classpath group: 'org.zeroturnaround', name: 'gradle-jrebel-plugin', version: '1.0.3-SNAPSHOT'
+    }
+}
+
+dependencies {
+    repositories {
+        mavenCentral()
+        mavenRepo(name: 'sonatype-snapshots', url: 'https://oss.sonatype.org/content/repositories/snapshots/')
+    }
+    compile (
+            [group: 'com.github.spullara.mustache.java',  name: 'compiler',                     version: '0.8.8'],
+            [group: 'com.github.ericdwhite',              name: 'mustache.java-spring-webmvc',  version: '0.9.3-SNAPSHOT'],
+            [group: 'org.springframework',                name: 'spring-webmvc',                version: '3.1.1.RELEASE'],
+    )
+}
+
+// Project Config
+task initConfig(type:Copy) {
+    from("$projectDir/config") {
+        include '**/*.xml'
+        expand(projectDir: projectDir) // TBD can we just pass down the context?
+    }
+    into 'build/config'
+}
+processResources.dependsOn(initConfig)
+
+// Cargo
+dependencies {
+    def cargoVersion = '1.3.1'
+    cargo "org.codehaus.cargo:cargo-core-uberjar:$cargoVersion",
+          "org.codehaus.cargo:cargo-ant:$cargoVersion"
+}
+
+cargo {
+    containerId = 'jetty8x'
+    port        = 8080
+
+    deployable {
+        file    = file("$buildDir/libs/${name}.war")
+        context = '/'
+    }
+
+    def rebelHome = System.env.REBEL_HOME
+    def jvmArgz   = '-Xdebug -Xrunjdwp:transport=dt_socket,address=5555,server=y,suspend=n -XX:MaxPermSize=512m'
+
+    if (rebelHome) {
+        jvmArgz = "-noverify -javaagent:'$rebelHome/jrebel.jar' -Drebel.mustache_plugin=true -Drebel.log=true " + jvmArgz
+    }
+    else {
+        println 'REBEL_HOME not found, cargo will not use jRebel java agent'
+    }
+
+    local {
+        configFile {
+            file  = file("$buildDir/config/jetty-logging.xml")
+            toDir = new File('etc') // workaround; file('etc') fails due cargo-gradle-plugin issue 18
+        }
+
+        output   = file("$projectDir/logs/startup.log")
+        log      = file("$projectDir/logs/cargo.log")
+        logLevel = 'medium'
+        jvmArgs  = jvmArgz
+        installer {
+            installUrl  = "file:///$projectDir/vendor/jetty-distribution-8.1.8.v20121106.zip"
+            downloadDir = file("$buildDir/download")
+            extractDir  = file("$buildDir/extract")
+        }
+    }
+}

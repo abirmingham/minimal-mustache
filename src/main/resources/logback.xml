@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <!-- Name of the context. Very handy to avoid log hijacking -->
+    <contextName>mgmt-ui</contextName>
+
+    <!-- Enable JMX configuration -->
+    <jmxConfigurator/>
+
+    <property name="applicationName" value="public-ui"/>
+
+    <!-- Available Appenders -->
+    <!-- applicationAppender - Intended for Application logs -->
+    <!-- springAppender - Intended for Spring related logs -->
+    <!-- STDOUT - Standard Output (use ONLY for tests) -->
+    <!-- thirdParty - Intended as a catch-all -->
+    <logger name="com.github.infinitesummer.minimalmustache" level="DEBUG" additivity="false">
+        <appender-ref ref="applicationAppender"/>
+    </logger>
+
+    <!-- default all the rest to ThirdParty -->
+    <root level="WARN">
+        <appender-ref ref="thirdParty"/>
+    </root>
+
+</configuration>
